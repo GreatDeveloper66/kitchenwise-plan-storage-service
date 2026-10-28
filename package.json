@@ -1,5 +1,5 @@
 {
-  "name": "meal-planner-user-meal-plan-service",
+  "name": "kitchenwise-plan-storage-service",
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",

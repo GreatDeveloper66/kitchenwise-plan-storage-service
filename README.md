@@ -1,64 +1,66 @@
-# ai-meal-planner-backend
+# kitchenwise-plan-storage-service
 
-A microservice that generates personalized meal plans using the OpenAI API. Part of the Meal Plan & Grocery Discovery application — a full-stack microservice architecture for personalized meal planning and local grocery store discovery.
+A microservice that stores and manages each user's saved meal plans. Part of the KitchenWise application — a full-stack microservice architecture for personalized meal planning and local grocery store discovery.
 
 ---
 
 ## Overview
 
-This service receives a user's dietary profile and generates a fully structured meal plan using OpenAI's API. It acts as the intelligence layer of the application — translating raw dietary preferences and health data into actionable, day-by-day meal recommendations complete with nutritional information.
+Once a meal plan has been generated, this service persists it to MongoDB against the authenticated user. Every `/api` route is protected by JWT authentication; the user ID is read from the verified token, so users can only create, read, update, or delete their own plans. Request bodies are validated with Zod before they reach the database.
 
 ---
 
 ## Tech Stack
 
-- **Runtime:** Node.js
+- **Runtime:** Node.js 20
 - **Language:** TypeScript
 - **Framework:** Express
-- **AI Integration:** OpenAI API
-
----
-
-## Features
-
-- Generates personalized meal plans based on user dietary profiles
-- Structures meal plans with daily meals and nutritional breakdowns
-- Supports multiple diet types including keto, vegan, vegetarian, and high protein
-- Budget-aware meal plan generation
+- **Database:** MongoDB (Mongoose)
+- **Validation:** Zod
+- **Auth:** JWT (jsonwebtoken)
+- **Deployment:** Vercel
 
 ---
 
 ## API Endpoints
 
+All `/api` routes require an `Authorization: Bearer <token>` header.
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/meal-plan/generate` | Generate a meal plan from a user diet profile |
+| GET | `/health` | Health check (public) |
+| POST | `/api/create-user-meal-plan` | Save a meal plan for the user |
+| GET | `/api/get-user-meal-plan` | Retrieve the user's meal plan |
+| PATCH | `/api/update-user-meal-plan` | Update the user's meal plan |
+| DELETE | `/api/delete-user-meal-plan` | Delete the user's meal plan |
 
 ---
 
-## Meal Plan Response Schema
+## Meal Plan Schema
 
 ```typescript
 {
-  id: string
-  date: string
-  meals: [
-    {
+  userId: string            // taken from the JWT, not the request body
+  date: Date
+  mealPlan: {
+    id: string
+    date: Date
+    meals: {
       id: string
-      name: string
-      foods: [
-        {
-          id: string
-          name: string
-          calories: number
-          protein: number
-          carbs: number
-          fat: number
-          quantity: string
-        }
-      ]
-    }
-  ]
+      name: "breakfast" | "lunch" | "dinner"
+      image?: string
+      price?: number
+      foods: {
+        id: string
+        name: string
+        calories: number
+        protein: number
+        carbs: number
+        fat: number
+        quantity?: string
+      }[]
+    }[]
+  }
 }
 ```
 
@@ -69,10 +71,12 @@ This service receives a user's dietary profile and generates a fully structured 
 Create a `.env` file in the root of the project with the following variables:
 
 ```env
-PORT=3003
-OPENAI_API_KEY=your_openai_api_key
+PORT=3000
+MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret
 ```
+
+`JWT_SECRET` must match the secret used by `user-auth-service`.
 
 ---
 
@@ -80,13 +84,13 @@ JWT_SECRET=your_jwt_secret
 
 ### Prerequisites
 - Node.js v18+
-- OpenAI API key
+- MongoDB instance (local or cloud)
 
 ### Installation
 
 ```bash
-git clone https://github.com/yourusername/ai-meal-planner-backend.git
-cd ai-meal-planner-backend
+git clone https://github.com/GreatDeveloper66/kitchenwise-plan-storage-service.git
+cd kitchenwise-plan-storage-service
 npm install
 ```
 
@@ -107,14 +111,18 @@ npm start
 
 ## Project Architecture
 
-This service is one of six components in the Meal Plan & Grocery Discovery application:
+This repository is one of seven components in the KitchenWise application (six backend microservices plus the React frontend):
 
-| Service | Responsibility |
+| Repository | Responsibility |
 |---------|---------------|
-| user-auth-service | Authentication & JWT management |
-| meal-plan-diet-profile-service | Diet profile storage & management |
-| **ai-meal-planner-backend** | AI-powered meal plan generation |
-| meal-planner-user-meal-plan-service | User meal plan storage |
-| meal-plan-grocery-service | Grocery store discovery via Google API |
-| meal-plan-frontend | React frontend |
-| meal-planner-backend-for-frontend | BFF orchestration layer |
+| [kitchenwise-frontend](https://github.com/GreatDeveloper66/kitchenwise-frontend) | React + TypeScript frontend |
+| [user-auth-service](https://github.com/GreatDeveloper66/user-auth-service) | Authentication & JWT management |
+| [kitchenwise-diet-profile-service](https://github.com/GreatDeveloper66/kitchenwise-diet-profile-service) | Diet profile storage & management |
+| [kitchenwise-meal-plan-service](https://github.com/GreatDeveloper66/kitchenwise-meal-plan-service) | AI-powered meal plan generation |
+| **[kitchenwise-plan-storage-service](https://github.com/GreatDeveloper66/kitchenwise-plan-storage-service)** | User meal plan storage |
+| [kitchenwise-grocery-service](https://github.com/GreatDeveloper66/kitchenwise-grocery-service) | Grocery store discovery by location (Google Places) |
+| [kitchenwise-recipe-service](https://github.com/GreatDeveloper66/kitchenwise-recipe-service) | AI recipe generation |
+
+## LICENSE
+
+See [LICENSE.md](LICENSE.md).
