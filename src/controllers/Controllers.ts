@@ -115,7 +115,9 @@ export const updateUserMealPlan = async (req: Request, res: Response) => {
       });
     }
 
-    const mealPlanData = req.body;
+    // Only the plan fields are updatable; userId always comes from the token.
+    const { date, mealPlan } = req.body;
+    const mealPlanData = { date, mealPlan };
 
     await UserMealPlanModel.updateOne(
       { userId },

@@ -6,7 +6,8 @@ import {
   deleteUserMealPlan,
   updateUserMealPlan
 } from './controllers/Controllers.js';
-import { UserMealPlanSchema } from './schemas/Schemas.js';
+// Bodies are validated without userId: Zod strips it, so the token's userId is the only one used.
+import { CreateMealPlanSchema } from './schemas/Schemas.js';
 import { authenticationMiddleware, validate } from './middleware/Middleware.js';
 
 const app = express();
@@ -26,10 +27,10 @@ app.get('/health', (req, res) => {
 // Protected routes (require authentication)
 app.use('/api', authenticationMiddleware);
 
-app.post('/api/create-user-meal-plan', validate(UserMealPlanSchema), createUserMealPlan);
+app.post('/api/create-user-meal-plan', validate(CreateMealPlanSchema), createUserMealPlan);
 app.get('/api/get-user-meal-plan', getUserMealPlan);
 app.delete('/api/delete-user-meal-plan', deleteUserMealPlan);
-app.patch('/api/update-user-meal-plan', validate(UserMealPlanSchema), updateUserMealPlan);
+app.patch('/api/update-user-meal-plan', validate(CreateMealPlanSchema), updateUserMealPlan);
 
 
 export default app;
