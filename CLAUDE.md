@@ -2,28 +2,33 @@
 
 Persists each user's saved meal plan to MongoDB. Branch: `main`. Deployed at https://meal-planner-user-meal-plan-service.vercel.app (old name, do not rename).
 
-Stack: Node.js 20, Express, TypeScript, MongoDB (Mongoose), Zod validation, jsonwebtoken.
+Stack: Node.js 26.x (`engines` in `package.json`; Vercel dropped 20.x), Express, TypeScript, MongoDB (Mongoose), Zod validation, jsonwebtoken. Routes in `src/app.ts`, auth and validation middleware in `src/middleware/Middleware.ts`, Zod schemas in `src/schemas/Schemas.ts`, Mongoose model in `src/models/Models.ts`.
 
 ## Routes
 
-All `/api` routes require `Authorization: Bearer <token>`. The user ID is read from the verified token.
+All `/api` routes require `Authorization: Bearer <token>` (enforced by `authenticationMiddleware` on `/api`). The user ID is read from the token's `id` claim.
 
-| Method | Route |
-|---|---|
-| GET | /health (note: not under /api) |
-| POST | /api/create-user-meal-plan |
-| GET | /api/get-user-meal-plan |
-| PATCH | /api/update-user-meal-plan |
-| DELETE | /api/delete-user-meal-plan |
+| Method | Route | Success response |
+|---|---|---|
+| GET | / | text "Hello, World!" |
+| GET | /health (not under /api) | `{ status, timestamp }` |
+| POST | /api/create-user-meal-plan | 201, saved document |
+| GET | /api/get-user-meal-plan | 200, saved document or `null` |
+| PATCH | /api/update-user-meal-plan | 200, echoes `{ date, mealPlan }` even if nothing matched |
+| DELETE | /api/delete-user-meal-plan | 200, Mongo `{ acknowledged, deletedCount }` |
 
-Body shape: `{ date, mealPlan: { id, date, meals: [{ id, name: "breakfast"|"lunch"|"dinner", image?, price?, foods: [{ id, name, calories, protein, carbs, fat, quantity? }] }] } }`.
+Body shape (create and update, `CreateMealPlanSchema`): `{ date, mealPlan: { id, date, meals: [{ id, name: "breakfast"|"lunch"|"dinner", image?, price?, foods: [{ id, name, calories, protein, carbs, fat, quantity? }] }] } }`. `mealPlan` is the `data` object from kitchenwise-meal-plan-service's `{ success, data }` response, not the whole response.
 
-## Things to confirm before building on this
+Errors: 401 `{ error }` (auth), 400 `{ message, errors: [{ path, message }] }` (Zod), 500 `{ message }`.
 
-- Resolved: create and update validate with `CreateMealPlanSchema`, which has no `userId`, so Zod strips any body `userId` (and `_id`, `__v`). The update controller writes only `date` and `mealPlan`. `userId` comes only from the token. Postman bodies that still send `userId` keep working; the field is ignored.
-- Get and delete take no ID, so the service currently behaves as one plan per user. Ask Adam before adding multi-plan support.
+Env: `MONGO_URI`, `JWT_SECRET`, optional `PORT` (default 3000).
+
+## Notes
+
+- `userId` comes only from the token. Zod strips any body `userId`, `_id`, or `__v`, and update writes only `date` and `mealPlan`. Postman bodies that still send those fields keep working.
+- Get, update, and delete take no ID, so the intended model is one plan per user. Create does not enforce this yet; a second create makes a duplicate and the other routes act on the first match. Ask Adam before adding multi-plan support.
 
 ## Rules
 
 - `JWT_SECRET` must match user-auth-service.
-- Env var is `MONGO_URI` here (other services use `MONGODB_URI`). Don't "fix" one without checking Vercel env settings.
+- This is the only service that reads a full `MONGO_URI`. user-auth-service and kitchenwise-diet-profile-service use `MONGO_USERNAME` and `MONGO_PASSWORD` and build an Atlas URI in code. Don't rename any of these without checking the Vercel env settings.
