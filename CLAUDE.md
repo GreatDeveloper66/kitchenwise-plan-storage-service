@@ -31,4 +31,4 @@ Env: `MONGO_URI`, `JWT_SECRET`, optional `PORT` (default 3000).
 ## Rules
 
 - `JWT_SECRET` must match user-auth-service.
-- user-auth-service and kitchenwise-diet-profile-service also read `MONGO_URI` (with a temporary `MONGO_USERNAME`/`MONGO_PASSWORD` fallback). Check the Vercel env settings before renaming it.
+- user-auth-service and kitchenwise-diet-profile-service also read `MONGO_URI`. Check the Vercel env settings before renaming it.
