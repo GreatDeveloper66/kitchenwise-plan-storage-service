@@ -2,6 +2,9 @@ import { Request, Response } from "express";
 import { UserMealPlanModel } from "../models/Models.js";
 import { connectDB } from "../config/db.js";
 
+// ObjectIds start with a creation timestamp, so sorting by _id descending puts the newest plan first.
+const NEWEST_FIRST = { _id: -1 } as const;
+
 export const createUserMealPlan = async (req: Request, res: Response) => {
   try {
     await connectDB();
@@ -55,7 +58,8 @@ export const getUserMealPlan = async (req: Request, res: Response) => {
       });
     }
 
-    const mealPlan = await UserMealPlanModel.findOne({ userId });
+    // A user can save several plans; get, update, and delete act on the newest.
+    const mealPlan = await UserMealPlanModel.findOne({ userId }).sort(NEWEST_FIRST);
 
     return res.status(200).json(mealPlan);
   } catch (err) {
@@ -85,9 +89,10 @@ export const deleteUserMealPlan = async (req: Request, res: Response) => {
       });
     }
 
-    const deleted = await UserMealPlanModel.deleteOne({ userId });
+    const deleted = await UserMealPlanModel.findOneAndDelete({ userId }, { sort: NEWEST_FIRST });
 
-    return res.status(200).json(deleted);
+    // Same shape as Mongo's deleteOne result, which this route returned before.
+    return res.status(200).json({ acknowledged: true, deletedCount: deleted ? 1 : 0 });
   } catch (err) {
     console.error(err);
 
@@ -119,9 +124,10 @@ export const updateUserMealPlan = async (req: Request, res: Response) => {
     const { date, mealPlan } = req.body;
     const mealPlanData = { date, mealPlan };
 
-    await UserMealPlanModel.updateOne(
+    await UserMealPlanModel.findOneAndUpdate(
       { userId },
-      mealPlanData
+      mealPlanData,
+      { sort: NEWEST_FIRST }
     );
 
     return res.status(200).json(mealPlanData);

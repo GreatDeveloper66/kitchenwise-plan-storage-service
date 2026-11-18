@@ -30,9 +30,9 @@ All `/api` routes require an `Authorization: Bearer <token>` header.
 |--------|----------|-------------|
 | GET | `/health` | Health check (public) |
 | POST | `/api/create-user-meal-plan` | Save a meal plan for the user |
-| GET | `/api/get-user-meal-plan` | Retrieve the user's meal plan |
-| PATCH | `/api/update-user-meal-plan` | Update the user's meal plan |
-| DELETE | `/api/delete-user-meal-plan` | Delete the user's meal plan |
+| GET | `/api/get-user-meal-plan` | Retrieve the user's newest meal plan |
+| PATCH | `/api/update-user-meal-plan` | Update the user's newest meal plan |
+| DELETE | `/api/delete-user-meal-plan` | Delete the user's newest meal plan |
 
 Create and update take the same body: `{ date, mealPlan }` (see the schema below). To save a plan from kitchenwise-meal-plan-service, put its response's `data` object in `mealPlan`. Any `userId`, `_id`, or `__v` in the body is stripped during validation; the user ID always comes from the token.
 
@@ -47,7 +47,7 @@ Create and update take the same body: `{ date, mealPlan }` (see the schema below
 
 Errors: `401 { error }` for a missing or invalid token, `400 { message: "Validation failed", errors: [{ path, message }] }` for an invalid body, `500 { message }` for database errors.
 
-The service is meant to hold one plan per user (get, update, and delete take no ID), but create does not yet reject a second plan. If a user creates twice, the other routes act on the first one.
+A user can save more than one plan: each create adds a new one. Get, update, and delete take no ID and act on the user's most recently created plan, so after a delete, get returns the next newest.
 
 ---
 

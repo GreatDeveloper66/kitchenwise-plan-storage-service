@@ -13,9 +13,9 @@ All `/api` routes require `Authorization: Bearer <token>` (enforced by `authenti
 | GET | / | text "Hello, World!" |
 | GET | /health (not under /api) | `{ status, timestamp }` |
 | POST | /api/create-user-meal-plan | 201, saved document |
-| GET | /api/get-user-meal-plan | 200, saved document or `null` |
-| PATCH | /api/update-user-meal-plan | 200, echoes `{ date, mealPlan }` even if nothing matched |
-| DELETE | /api/delete-user-meal-plan | 200, Mongo `{ acknowledged, deletedCount }` |
+| GET | /api/get-user-meal-plan | 200, newest saved document or `null` |
+| PATCH | /api/update-user-meal-plan | 200, echoes `{ date, mealPlan }` even if nothing matched; updates the newest plan |
+| DELETE | /api/delete-user-meal-plan | 200, `{ acknowledged: true, deletedCount: 0 or 1 }`; deletes the newest plan |
 
 Body shape (create and update, `CreateMealPlanSchema`): `{ date, mealPlan: { id, date, meals: [{ id, name: "breakfast"|"lunch"|"dinner", image?, price?, foods: [{ id, name, calories, protein, carbs, fat, quantity? }] }] } }`. `mealPlan` is the `data` object from kitchenwise-meal-plan-service's `{ success, data }` response, not the whole response.
 
@@ -26,7 +26,7 @@ Env: `MONGO_URI`, `JWT_SECRET`, optional `PORT` (default 3000).
 ## Notes
 
 - `userId` comes only from the token. Zod strips any body `userId`, `_id`, or `__v`, and update writes only `date` and `mealPlan`. Postman bodies that still send those fields keep working.
-- Get, update, and delete take no ID, so the intended model is one plan per user. Create does not enforce this yet; a second create makes a duplicate and the other routes act on the first match. Ask Adam before adding multi-plan support.
+- Users can save several plans (Adam's decision, 2026-11-17, to leave room for history or favorites). Every create adds one. Get, update, and delete take no ID and act on the newest plan (sort `_id` descending). The frontend currently assumes one plan per user. Future history/favorites should add new routes (list, get by ID) rather than change these.
 
 ## Rules
 
